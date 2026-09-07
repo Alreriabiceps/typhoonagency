@@ -1,32 +1,105 @@
 @import "tailwindcss";
 
+@theme {
+  /* Near-black ground with a faint blue undertone */
+  --color-ink: #07070a;
+  --color-ink-raised: #0d0e13;
+
+  /* OnlyFans-inspired accent */
+  --color-accent: #00aff0;
+  --color-accent-strong: #0b93c9;
+
+  --font-sans: "Inter", ui-sans-serif, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
 @layer base {
   html {
     color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
   }
+
   body {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #0A0A0B;
-    color: #ffffff;
+    margin: 0;
+    background-color: var(--color-ink);
+    color: #fff;
+    font-family: var(--font-sans);
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
   }
+
+  /* Visible, on-brand focus ring for keyboard users only */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
 }
 
-.font-serif {
-  font-family: 'Instrument Serif', Georgia, serif;
+/* Hero photograph: melts into the page instead of sitting in a box.
+   Mobile fades downward (text sits below), desktop fades leftward. */
+.media-fade {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 92%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 68%,
+    transparent 92%
+  );
 }
 
-/* Subtle editorial grain overlay */
-.bg-grain {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 0);
-  background-size: 24px 24px;
+@media (min-width: 1024px) {
+  .media-fade {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.35) 16%,
+      #000 44%,
+      #000 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.35) 16%,
+      #000 44%,
+      #000 100%
+    );
+  }
 }
 
-/* High-impact Bold Typography Electric Blue Glow */
-.electric-glow {
-  box-shadow: 0 0 50px -8px rgba(0, 143, 242, 0.4);
+/* Fine editorial grain — keeps large flat blacks from banding */
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 3px 3px;
 }
 
-.electric-glow-sm {
-  box-shadow: 0 0 25px -4px rgba(0, 143, 242, 0.45);
+/* Descender room for the clipped headline reveal */
+.line-mask {
+  overflow: hidden;
+  padding-bottom: 0.14em;
+  margin-bottom: -0.14em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

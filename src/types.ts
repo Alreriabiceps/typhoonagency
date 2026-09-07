@@ -1,16 +1,8 @@
 export interface ApplicationFormData {
   name: string;
-  isEighteenPlus: boolean;
-  socialHandle: string; // Instagram or TikTok username
   email: string;
-  interestReason: string;
+  socialHandle: string; // Instagram or TikTok
+  isEighteenPlus: boolean;
 }
 
-export interface BenefitItem {
-  id: string;
-  title: string;
-  description: string;
-  metric?: string;
-}
-
-export type ModalType = 'apply' | 'privacy' | 'terms' | null;
+export type ApplicationErrors = Partial<Record<keyof ApplicationFormData, string>>;

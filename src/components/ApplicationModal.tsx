@@ -1,324 +1,424 @@
-import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, ShieldCheck, ArrowRight, Loader2, Sparkles } from 'lucide-react';
-import { ApplicationFormData } from '../types';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import gsap from 'gsap';
+import { ArrowRight, Check, Loader2, X } from 'lucide-react';
+import { submitApplication } from '../lib/submitApplication';
+import type { ApplicationErrors, ApplicationFormData } from '../types';
 
 interface ApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export const ApplicationModal: React.FC<ApplicationModalProps> = ({ isOpen, onClose }) => {
-  const [formData, setFormData] = useState<ApplicationFormData>({
-    name: '',
-    isEighteenPlus: false,
-    socialHandle: '',
-    email: '',
-    interestReason: '',
-  });
+const EMPTY_FORM: ApplicationFormData = {
+  name: '',
+  email: '',
+  socialHandle: '',
+  isEighteenPlus: false,
+};
 
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const fieldClass = (hasError: boolean) =>
+  [
+    'w-full rounded-xl border bg-white/[0.03] px-4 py-3.5 text-sm text-white',
+    'placeholder:text-white/25 transition-colors duration-200 focus:outline-none',
+    hasError ? 'border-red-500/70 focus:border-red-400' : 'border-white/10 focus:border-accent',
+  ].join(' ');
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export function ApplicationModal({ isOpen, onClose }: ApplicationModalProps) {
+  const [form, setForm] = useState<ApplicationFormData>(EMPTY_FORM);
+  const [errors, setErrors] = useState<ApplicationErrors>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Close on Escape key
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isSubmitting) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isSubmitting, onClose]);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closingRef = useRef(false);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
-  // Prevent background scrolling while modal is active
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+  const requestClose = useCallback(() => {
+    if (isSubmitting || closingRef.current) return;
+
+    const finish = () => {
+      closingRef.current = false;
+      setForm(EMPTY_FORM);
+      setErrors({});
+      setSubmitError(null);
+      setIsSuccess(false);
+      onClose();
+    };
+
+    if (prefersReducedMotion() || !panelRef.current || !backdropRef.current) {
+      finish();
+      return;
     }
+
+    closingRef.current = true;
+    gsap.to(panelRef.current, {
+      autoAlpha: 0,
+      y: 10,
+      scale: 0.985,
+      duration: 0.2,
+      ease: 'power2.in',
+    });
+    gsap.to(backdropRef.current, {
+      autoAlpha: 0,
+      duration: 0.24,
+      ease: 'power2.in',
+      onComplete: finish,
+    });
+  }, [isSubmitting, onClose]);
+
+  // Entrance animation, then focus the first field
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+
+    const ctx = gsap.context(() => {
+      if (prefersReducedMotion()) {
+        gsap.set([backdropRef.current, panelRef.current], { autoAlpha: 1, y: 0, scale: 1 });
+        return;
+      }
+
+      gsap.set(backdropRef.current, { autoAlpha: 0 });
+      gsap.set(panelRef.current, { autoAlpha: 0, y: 18, scale: 0.985 });
+
+      gsap
+        .timeline()
+        .to(backdropRef.current, { autoAlpha: 1, duration: 0.3, ease: 'power2.out' })
+        .to(
+          panelRef.current,
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.45, ease: 'power3.out' },
+          0.05,
+        )
+        .fromTo(
+          '.js-field',
+          { autoAlpha: 0, y: 12 },
+          { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' },
+          0.18,
+        );
+    }, panelRef);
+
+    const focusTimer = window.setTimeout(() => {
+      panelRef.current?.querySelector<HTMLElement>('input')?.focus();
+    }, 220);
+
     return () => {
-      document.body.style.overflow = 'unset';
+      window.clearTimeout(focusTimer);
+      ctx.revert();
     };
   }, [isOpen]);
 
+  // Hand focus back to whatever opened the dialog
+  useEffect(() => {
+    if (isOpen) return;
+    previouslyFocused.current?.focus?.();
+  }, [isOpen]);
+
+  // Lock background scrolling while open
+  useEffect(() => {
+    if (!isOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen]);
+
+  // Escape closes; Tab stays inside the dialog
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        requestClose();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !panelRef.current) return;
+
+      const focusable: HTMLElement[] = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+
+      if (event.shiftKey && (active === first || !panelRef.current.contains(active))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && active === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, requestClose]);
+
   if (!isOpen) return null;
 
-  const validate = () => {
-    const newErrors: { [key: string]: string } = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Please provide your full or preferred name.';
-    }
-
-    if (!formData.isEighteenPlus) {
-      newErrors.isEighteenPlus = 'You must confirm that you are at least 18 years of age.';
-    }
-
-    if (!formData.socialHandle.trim()) {
-      newErrors.socialHandle = 'Please provide your Instagram or TikTok handle.';
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = 'Please provide your email address.';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      newErrors.email = 'Please enter a valid email address.';
-    }
-
-    if (!formData.interestReason.trim()) {
-      newErrors.interestReason = 'Please briefly describe why you are interested in joining.';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const update = <K extends keyof ApplicationFormData>(
+    key: K,
+    value: ApplicationFormData[K],
+  ) => {
+    setForm((current) => ({ ...current, [key]: value }));
+    setErrors((current) => ({ ...current, [key]: undefined }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validate = (): boolean => {
+    const next: ApplicationErrors = {};
+
+    if (!form.name.trim()) next.name = 'Please enter your name.';
+
+    if (!form.email.trim()) {
+      next.email = 'Please enter your email.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      next.email = 'Please enter a valid email address.';
+    }
+
+    if (!form.socialHandle.trim()) next.socialHandle = 'Please add one social handle.';
+    if (!form.isEighteenPlus) next.isEighteenPlus = 'You must confirm you are 18 or over.';
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitError(null);
     if (!validate()) return;
 
     setIsSubmitting(true);
-
-    // Simulate safe API submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      await submitApplication(form);
       setIsSuccess(true);
-    }, 1200);
-  };
-
-  const handleReset = () => {
-    setFormData({
-      name: '',
-      isEighteenPlus: false,
-      socialHandle: '',
-      email: '',
-      interestReason: '',
-    });
-    setErrors({});
-    setIsSuccess(false);
-    onClose();
+    } catch {
+      setSubmitError('Something went wrong sending your application. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-headline"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto"
-    >
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto p-4 sm:p-6">
       <div
-        onClick={!isSubmitting ? onClose : undefined}
-        className="fixed inset-0 bg-black/80 backdrop-blur-md transition-opacity"
-      ></div>
+        ref={backdropRef}
+        onClick={requestClose}
+        aria-hidden="true"
+        className="fixed inset-0 bg-black/75 backdrop-blur-md"
+      />
 
-      {/* Modal Container with Bold Typography aesthetic */}
-      <div className="relative w-full max-w-lg bg-[#0e0f14] border border-white/10 rounded-[32px] p-6 sm:p-8 shadow-2xl shadow-black z-10 text-left my-8">
-        
-        {/* Close Button */}
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-title"
+        className="relative z-10 my-auto w-full max-w-[480px] rounded-2xl border border-white/10 bg-ink-raised p-7 shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] sm:p-9"
+      >
         <button
-          onClick={onClose}
+          type="button"
+          onClick={requestClose}
           disabled={isSubmitting}
-          aria-label="Close application modal"
-          className="absolute top-5 right-5 p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/[0.08] transition-colors cursor-pointer"
+          aria-label="Close application"
+          className="absolute right-5 top-5 rounded-full p-1.5 text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
         >
-          <X className="w-5 h-5" />
+          <X aria-hidden="true" className="h-4 w-4" />
         </button>
 
         {isSuccess ? (
-          /* Submission Success State */
-          <div className="py-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#008FF2]/15 border border-[#008FF2]/30 mx-auto flex items-center justify-center mb-6">
-              <CheckCircle className="w-8 h-8 text-[#008FF2]" />
+          <div className="py-4 text-center">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border border-accent/30 bg-accent/10">
+              <Check aria-hidden="true" className="h-6 w-6 text-accent" />
             </div>
 
-            <span className="inline-block text-[11px] font-bold uppercase tracking-widest text-[#008FF2] mb-2">
-              Application Received
-            </span>
+            <h2
+              id="application-title"
+              className="mb-3 text-2xl font-extrabold uppercase tracking-[-0.02em]"
+            >
+              Application received
+            </h2>
 
-            <h3 id="modal-headline" className="text-2xl sm:text-3xl font-bold tracking-tight text-white mb-3">
-              Thank you, {formData.name.split(' ')[0]}.
-            </h3>
-
-            <p className="text-sm text-gray-300 leading-relaxed max-w-md mx-auto mb-6">
-              Your confidential application has been securely routed to our senior management team. We evaluate each creator profile with strict discretion and will reach out via email or direct message within 24–48 hours.
+            <p className="mx-auto mb-8 max-w-[320px] text-sm leading-relaxed text-white/50">
+              Thanks{form.name.trim() ? `, ${form.name.trim().split(' ')[0]}` : ''}. We review every
+              application personally and reply by email if there is a fit.
             </p>
 
-            <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-gray-400 text-left space-y-2 mb-8">
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Candidate:</span>
-                <span className="text-white font-medium">{formData.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Contact Handle:</span>
-                <span className="text-white font-medium">{formData.socialHandle}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-zinc-500">Status:</span>
-                <span className="text-[#008FF2] font-medium flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#008FF2] inline-block animate-pulse"></span>
-                  Under Review
-                </span>
-              </div>
-            </div>
-
             <button
-              onClick={handleReset}
-              className="w-full py-4 px-6 rounded-full bg-[#008FF2] hover:bg-[#007cd2] text-white font-bold text-sm tracking-tight shadow-[0_0_20px_rgba(0,143,242,0.3)] active:scale-95 transition-all cursor-pointer"
+              type="button"
+              onClick={requestClose}
+              className="w-full rounded-full bg-white px-8 py-3.5 text-[13px] font-bold uppercase tracking-[0.14em] text-black transition-colors hover:bg-white/85"
             >
               Done
             </button>
           </div>
         ) : (
-          /* Application Form */
-          <div>
-            <div className="mb-6 pr-8">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-widest text-[#008FF2]">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Creator Application
-                </span>
-              </div>
-              <h3 id="modal-headline" className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                Apply to Join Typhoon
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1.5 leading-relaxed">
-                Complete the confidential questionnaire below. All submissions are protected under standard agency non-disclosure.
-              </p>
+          <>
+            <div className="js-field mb-7 pr-8">
+              <h2
+                id="application-title"
+                className="text-2xl font-extrabold uppercase leading-[1.05] tracking-[-0.025em] sm:text-[28px]"
+              >
+                Start your <span className="text-accent">application</span>
+              </h2>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              
-              {/* Full / Preferred Name */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Full or Preferred Name <span className="text-[#008FF2]">*</span>
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+              <div className="js-field">
+                <label
+                  htmlFor="application-name"
+                  className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45"
+                >
+                  Name
                 </label>
                 <input
+                  id="application-name"
                   type="text"
-                  placeholder="e.g., Mia Vance"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border ${
-                    errors.name ? 'border-red-500/80 focus:border-red-500' : 'border-white/10 focus:border-[#008FF2]'
-                  } text-white placeholder-zinc-500 text-sm focus:outline-none transition-colors`}
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={form.name}
+                  onChange={(event) => update('name', event.target.value)}
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? 'application-name-error' : undefined}
+                  className={fieldClass(Boolean(errors.name))}
                 />
-                {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+                {errors.name && (
+                  <p id="application-name-error" className="mt-1.5 text-xs text-red-400">
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
-              {/* Instagram / TikTok Username */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Instagram / TikTok Username <span className="text-[#008FF2]">*</span>
+              <div className="js-field">
+                <label
+                  htmlFor="application-email"
+                  className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45"
+                >
+                  Email
+                </label>
+                <input
+                  id="application-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@email.com"
+                  value={form.email}
+                  onChange={(event) => update('email', event.target.value)}
+                  aria-invalid={Boolean(errors.email)}
+                  aria-describedby={errors.email ? 'application-email-error' : undefined}
+                  className={fieldClass(Boolean(errors.email))}
+                />
+                {errors.email && (
+                  <p id="application-email-error" className="mt-1.5 text-xs text-red-400">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              <div className="js-field">
+                <label
+                  htmlFor="application-social"
+                  className="mb-2 block text-[10px] font-semibold uppercase tracking-[0.2em] text-white/45"
+                >
+                  Instagram / TikTok
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-3 text-zinc-500 text-sm">@</span>
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm text-white/30"
+                  >
+                    @
+                  </span>
                   <input
+                    id="application-social"
                     type="text"
                     placeholder="yourhandle"
-                    value={formData.socialHandle.replace(/^@/, '')}
-                    onChange={(e) => setFormData({ ...formData, socialHandle: e.target.value })}
-                    className={`w-full pl-8 pr-4 py-3 rounded-xl bg-white/[0.04] border ${
-                      errors.socialHandle
-                        ? 'border-red-500/80 focus:border-red-500'
-                        : 'border-white/10 focus:border-[#008FF2]'
-                    } text-white placeholder-zinc-500 text-sm focus:outline-none transition-colors`}
+                    value={form.socialHandle}
+                    onChange={(event) => update('socialHandle', event.target.value.replace(/^@/, ''))}
+                    aria-invalid={Boolean(errors.socialHandle)}
+                    aria-describedby={errors.socialHandle ? 'application-social-error' : undefined}
+                    className={`${fieldClass(Boolean(errors.socialHandle))} pl-8`}
                   />
                 </div>
                 {errors.socialHandle && (
-                  <p className="text-red-400 text-xs mt-1">{errors.socialHandle}</p>
+                  <p id="application-social-error" className="mt-1.5 text-xs text-red-400">
+                    {errors.socialHandle}
+                  </p>
                 )}
               </div>
 
-              {/* Email Address */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Email Address <span className="text-[#008FF2]">*</span>
-                </label>
-                <input
-                  type="email"
-                  placeholder="your.name@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border ${
-                    errors.email ? 'border-red-500/80 focus:border-red-500' : 'border-white/10 focus:border-[#008FF2]'
-                  } text-white placeholder-zinc-500 text-sm focus:outline-none transition-colors`}
-                />
-                {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email}</p>}
-              </div>
-
-              {/* Why are you interested in joining? */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Why are you interested in joining Typhoon? <span className="text-[#008FF2]">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Tell us about your current audience, goals, and what you'd like support with..."
-                  value={formData.interestReason}
-                  onChange={(e) => setFormData({ ...formData, interestReason: e.target.value })}
-                  className={`w-full px-4 py-3 rounded-xl bg-white/[0.04] border ${
-                    errors.interestReason
-                      ? 'border-red-500/80 focus:border-red-500'
-                      : 'border-white/10 focus:border-[#008FF2]'
-                  } text-white placeholder-zinc-500 text-sm focus:outline-none transition-colors resize-none`}
-                ></textarea>
-                {errors.interestReason && (
-                  <p className="text-red-400 text-xs mt-1">{errors.interestReason}</p>
-                )}
-              </div>
-
-              {/* Age confirmation (18+) */}
-              <div className="pt-2">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={formData.isEighteenPlus}
-                    onChange={(e) => setFormData({ ...formData, isEighteenPlus: e.target.checked })}
-                    className="mt-0.5 h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-[#008FF2] focus:ring-[#008FF2] focus:ring-offset-zinc-900 cursor-pointer accent-[#008FF2]"
-                  />
-                  <span className="text-xs text-gray-300 group-hover:text-white leading-tight">
-                    I confirm that I am at least 18 years of age and authorized to enter into talent representation discussions.
+              <div className="js-field pt-1">
+                <label htmlFor="application-age" className="flex cursor-pointer items-center gap-3">
+                  <span className="relative flex h-[18px] w-[18px] shrink-0 items-center justify-center">
+                    <input
+                      id="application-age"
+                      type="checkbox"
+                      checked={form.isEighteenPlus}
+                      onChange={(event) => update('isEighteenPlus', event.target.checked)}
+                      aria-invalid={Boolean(errors.isEighteenPlus)}
+                      aria-describedby={errors.isEighteenPlus ? 'application-age-error' : undefined}
+                      className="peer h-[18px] w-[18px] cursor-pointer appearance-none rounded-[5px] border border-white/25 bg-white/[0.04] transition-colors duration-150 checked:border-accent checked:bg-accent"
+                    />
+                    <Check
+                      aria-hidden="true"
+                      strokeWidth={3.5}
+                      className="pointer-events-none absolute h-3 w-3 text-black opacity-0 transition-opacity duration-150 peer-checked:opacity-100"
+                    />
                   </span>
+                  <span className="text-[13px] text-white/60">I confirm I am 18+</span>
                 </label>
                 {errors.isEighteenPlus && (
-                  <p className="text-red-400 text-xs mt-1">{errors.isEighteenPlus}</p>
+                  <p id="application-age-error" className="mt-1.5 text-xs text-red-400">
+                    {errors.isEighteenPlus}
+                  </p>
                 )}
               </div>
 
-              {/* Submit Button */}
-              <div className="pt-4">
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full inline-flex items-center justify-center gap-2 py-4 px-6 rounded-full bg-[#008FF2] hover:bg-[#007cd2] text-white font-bold text-sm tracking-tight shadow-[0_0_25px_rgba(0,143,242,0.4)] active:scale-[0.99] disabled:opacity-50 transition-all cursor-pointer"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      <span>Transmitting Encrypted Application...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Submit Application</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </div>
+              {submitError && (
+                <p role="alert" className="text-xs text-red-400">
+                  {submitError}
+                </p>
+              )}
 
-              {/* Discreet privacy notice */}
-              <div className="flex items-center justify-center gap-1.5 pt-2 text-[11px] text-zinc-500">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#008FF2]" />
-                <span>Encrypted transmission. Your identity is 100% safeguarded.</span>
-              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="js-field group flex w-full items-center justify-center gap-2.5 rounded-full bg-accent px-8 py-4 text-[13px] font-bold uppercase tracking-[0.14em] text-black transition-all duration-200 hover:bg-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                    Sending
+                  </>
+                ) : (
+                  <>
+                    Submit Application
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+                    />
+                  </>
+                )}
+              </button>
 
+              <p className="js-field text-center text-[10px] uppercase tracking-[0.18em] text-white/25">
+                Private application <span className="mx-1 text-white/15">•</span> 18+ only
+              </p>
             </form>
-          </div>
+          </>
         )}
-
       </div>
     </div>
   );
-};
+}

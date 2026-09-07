@@ -1,4 +1,4 @@
-const PILLARS = ['Growth', 'Management', 'Content', 'Support'];
+const PILLARS = ['Fan chat', 'Account ops', 'Growth', 'Private apply'];
 
 export function CredibilityStrip() {
   return (

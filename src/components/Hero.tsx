@@ -13,32 +13,30 @@ const ALL_TARGETS = [
   '.js-brand',
   '.js-line',
   '.js-eyebrow',
-  '.js-lead',
+  '.js-sub',
+  '.js-services',
   '.js-proof',
-  '.js-offer',
+  '.js-terms',
   '.js-cta',
+  '.js-trust',
   '.js-media',
   '.js-strip-item',
 ];
 
-const SERVICES = ['Traffic', 'Content strategy', 'Chatting', 'Retention'];
+const SERVICES = ['Traffic', 'Strategy', 'Chatting', 'Retention'];
+
+const TERMS = [
+  { value: 'No', label: 'Upfront fees' },
+  { value: 'No', label: 'Monthly retainer' },
+  { value: '%', label: 'We earn when you do', accent: true },
+] as const;
 
 const IG_HREF = 'https://www.instagram.com/icona.talents/';
 const IG_PATH =
   'M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.055 1.265.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.055-1.645.07-4.859.07-3.203 0-3.585-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.646-.061-4.849 0-3.204.016-3.585.061-4.849.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.668c-3.405 0-6.162 2.76-6.162 6.162S8.595 18.333 12 18.333 18.166 15.577 18.166 12.172 15.405 5.828 12 5.828zM12 16c-2.156 0-3.908-1.751-3.908-3.908S9.844 8.184 12 8.184s3.908 1.751 3.908 3.908S14.156 16 12 16zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z';
 
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-      className={className}
-    >
-      <path d={IG_PATH} className="fill-current" />
-    </svg>
-  );
-}
+const OF_PATH =
+  'M24 4.003h-4.015c-3.45 0-5.3.197-6.748 1.957a7.996 7.996 0 1 0 2.103 9.211c3.182-.231 5.39-2.134 6.085-5.173c0 0-2.399.585-4.43 0c4.018-.777 6.333-3.037 7.005-5.995M5.61 11.999A2.391 2.391 0 0 1 9.28 9.97a2.966 2.966 0 0 1 2.998-2.528h.008c-.92 1.778-1.407 3.352-1.998 5.263A2.392 2.392 0 0 1 5.61 12Zm2.386-7.996a7.996 7.996 0 1 0 7.996 7.996a7.996 7.996 0 0 0-7.996-7.996m0 10.394A2.399 2.399 0 1 1 10.395 12a2.396 2.396 0 0 1-2.399 2.398Z';
 
 export function Hero({ onApply }: HeroProps) {
   const rootRef = useRef<HTMLElement>(null);
@@ -55,10 +53,10 @@ export function Hero({ onApply }: HeroProps) {
 
       gsap.set('.js-brand', { autoAlpha: 0, y: -12 });
       gsap.set('.js-line', { yPercent: 108 });
-      gsap.set(['.js-eyebrow', '.js-lead', '.js-proof', '.js-offer', '.js-cta'], {
-        autoAlpha: 0,
-        y: 20,
-      });
+      gsap.set(
+        ['.js-eyebrow', '.js-sub', '.js-services', '.js-proof', '.js-terms', '.js-cta', '.js-trust'],
+        { autoAlpha: 0, y: 18 },
+      );
       gsap.set('.js-media', { autoAlpha: 0, scale: 1.06, clipPath: 'inset(0% 0% 0% 10%)' });
       gsap.set('.js-strip-item', { autoAlpha: 0, y: 10 });
 
@@ -73,12 +71,14 @@ export function Hero({ onApply }: HeroProps) {
         })
         .to('.js-brand', { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.06 }, 0.1)
         .to('.js-eyebrow', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.25)
-        .to('.js-line', { yPercent: 0, duration: 1.1, stagger: 0.08, ease: 'power4.out' }, 0.35)
-        .to('.js-lead', { autoAlpha: 1, y: 0, duration: 0.8 }, 0.85)
-        .to('.js-proof', { autoAlpha: 1, y: 0, duration: 0.8 }, 0.98)
-        .to('.js-offer', { autoAlpha: 1, y: 0, duration: 0.8 }, 1.1)
-        .to('.js-cta', { autoAlpha: 1, y: 0, duration: 0.8 }, 1.22)
-        .to('.js-strip-item', { autoAlpha: 1, y: 0, duration: 0.7, stagger: 0.07 }, 1.1);
+        .to('.js-line', { yPercent: 0, duration: 1.05, stagger: 0.07, ease: 'power4.out' }, 0.35)
+        .to('.js-sub', { autoAlpha: 1, y: 0, duration: 0.75 }, 0.82)
+        .to('.js-services', { autoAlpha: 1, y: 0, duration: 0.7 }, 0.92)
+        .to('.js-proof', { autoAlpha: 1, y: 0, duration: 0.75 }, 1.0)
+        .to('.js-terms', { autoAlpha: 1, y: 0, duration: 0.7 }, 1.1)
+        .to('.js-cta', { autoAlpha: 1, y: 0, duration: 0.75 }, 1.2)
+        .to('.js-trust', { autoAlpha: 1, y: 0, duration: 0.65 }, 1.32)
+        .to('.js-strip-item', { autoAlpha: 1, y: 0, duration: 0.65, stagger: 0.06 }, 1.15);
     });
 
     return () => ctx.revert();
@@ -113,13 +113,16 @@ export function Hero({ onApply }: HeroProps) {
   }, []);
 
   return (
-    <section ref={rootRef} className="relative flex flex-1 items-end overflow-hidden lg:items-center">
-      <div className="js-media absolute inset-0 lg:left-auto lg:w-[56%] xl:w-[54%]">
+    <section
+      ref={rootRef}
+      className="relative flex min-h-[calc(100dvh-8.5rem)] flex-1 items-end overflow-hidden lg:min-h-[calc(100dvh-9.5rem)] lg:items-center"
+    >
+      <div className="js-media absolute inset-0 lg:left-auto lg:w-[58%] xl:w-[55%]">
         <div ref={parallaxRef} className="grain absolute inset-[-4%]">
           <img
             src={photoAt(1200)}
             srcSet={`${photoAt(640)} 640w, ${photoAt(900)} 900w, ${photoAt(1200)} 1200w, ${photoAt(1600)} 1600w`}
-            sizes="(min-width: 1024px) 56vw, 100vw"
+            sizes="(min-width: 1024px) 58vw, 100vw"
             alt="Typhoon Agency creator portrait"
             width={1200}
             height={1600}
@@ -130,122 +133,148 @@ export function Hero({ onApply }: HeroProps) {
           />
         </div>
 
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-transparent lg:hidden" />
-        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 bg-gradient-to-r from-ink via-ink/55 to-transparent lg:block" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-40 bg-gradient-to-t from-ink to-transparent lg:block" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink via-ink/85 to-ink/20 lg:hidden" />
+        <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[55%] bg-gradient-to-r from-ink via-ink/70 to-transparent lg:block" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-48 bg-gradient-to-t from-ink to-transparent lg:block" />
       </div>
 
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -right-24 top-1/4 h-[420px] w-[420px] rounded-full bg-accent opacity-[0.16] blur-[160px]"
+        className="pointer-events-none absolute -right-24 top-1/4 h-[420px] w-[420px] rounded-full bg-accent opacity-[0.14] blur-[160px]"
       />
 
-      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 pb-9 pt-24 sm:px-10 sm:pb-14 sm:pt-32 lg:px-14 lg:py-14">
-        <div className="max-w-[min(100%,34rem)]">
-          {/* 1 — Who */}
-          <p className="js-eyebrow mb-4 text-[10px] font-semibold uppercase tracking-[0.28em] text-white/40 sm:mb-5 sm:text-[11px]">
-            IconaTalents
-            <span className="mx-2.5 text-white/20">·</span>
-            Top 0.01% worldwide
+      <div className="relative z-10 mx-auto w-full max-w-[1440px] px-6 pb-10 pt-28 sm:px-10 sm:pb-14 sm:pt-32 lg:px-14 lg:py-12">
+        <div className="max-w-[min(100%,32rem)] lg:max-w-[36rem]">
+          <p className="js-eyebrow mb-5 flex items-center gap-2.5 text-[10px] font-semibold uppercase tracking-[0.26em] text-white/40 sm:text-[11px]">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+              className="h-3.5 w-3.5 shrink-0 fill-accent"
+            >
+              <path d={OF_PATH} />
+            </svg>
+            OnlyFans management
+            <span className="text-white/20">·</span>
+            Top 0.01%
           </p>
 
-          {/* 2 — Headline */}
-          <h1 className="mb-6 font-display text-[clamp(1.85rem,0.9rem+3.8vw,3.15rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.04em] text-white sm:mb-7">
+          <h1 className="mb-5 font-display text-[clamp(2rem,1.1rem+3.2vw,3.35rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.045em] text-white sm:mb-6">
             <span className="line-mask block">
-              <span className="js-line block">Turn your</span>
+              <span className="js-line block whitespace-nowrap">Turn content</span>
             </span>
             <span className="line-mask block">
-              <span className="js-line block">content into</span>
+              <span className="js-line block whitespace-nowrap">into a</span>
             </span>
             <span className="line-mask block">
-              <span className="js-line block">
-                a <span className="text-accent">business.</span>
-              </span>
+              <span className="js-line block whitespace-nowrap text-accent">business.</span>
             </span>
           </h1>
 
-          {/* 3 — Lead */}
-          <p className="js-lead mb-8 max-w-[38ch] text-[15px] leading-relaxed text-white/55 sm:mb-9 sm:text-base">
-            Hey, I came across your profile and genuinely think you have serious potential.
-            I&apos;m a recruiter for an OF agency managing creators in the top 0.01% worldwide.
+          <p className="js-sub mb-5 max-w-[38ch] text-[15px] leading-relaxed text-white/55 sm:text-[16px] sm:leading-snug">
+            Full management for creators who want their page to pay like a business — without
+            living in the inbox.
           </p>
 
-          {/* 4 — Proof */}
-          <div className="js-proof mb-8 border-l-2 border-accent pl-4 sm:mb-9 sm:pl-5">
-            <p className="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 font-display font-extrabold tracking-[-0.04em]">
-              <span className="text-[1.5rem] text-white/40 sm:text-[1.65rem]">$100</span>
-              <span className="text-[12px] font-semibold tracking-[0.18em] text-accent">→</span>
-              <span className="text-[1.5rem] text-accent sm:text-[1.65rem]">$30k</span>
-            </p>
-            <p className="max-w-[40ch] text-[13px] leading-relaxed text-white/45 sm:text-[14px]">
-              One of our newest creators was generating around $100 per month before joining us,
-              and reached $30k in revenue during her first full month with our team.
-            </p>
-          </div>
-
-          {/* 5 — Offer */}
-          <div className="js-offer mb-9 sm:mb-10">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/35">
-              We handle everything
-            </p>
-            <ul className="mb-5 flex flex-wrap gap-x-1 gap-y-2">
-              {SERVICES.map((service, index) => (
-                <li key={service} className="flex items-center text-[13px] text-white/70 sm:text-[14px]">
-                  {index > 0 && (
-                    <span aria-hidden="true" className="mx-2.5 text-white/20">
-                      ·
-                    </span>
-                  )}
-                  {service}
-                </li>
-              ))}
-            </ul>
-            <p className="max-w-[40ch] text-[14px] leading-relaxed text-white/50 sm:text-[15px]">
-              There are no upfront payments or monthly retainers. We only make money when you do.
-              All of our results can be verified directly.
-            </p>
-          </div>
-
-          {/* 6 — CTA */}
-          <div className="js-cta">
-            <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-4">
-              <button
-                type="button"
-                onClick={onApply}
-                className="group inline-flex items-center gap-3 bg-accent px-8 py-4 text-[13px] font-bold uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:px-9 sm:text-sm"
+          <ul className="js-services mb-8 flex flex-wrap gap-x-1 gap-y-2">
+            {SERVICES.map((service, index) => (
+              <li
+                key={service}
+                className="flex items-center text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55 sm:text-[12px]"
               >
-                Apply Now
-                <ArrowRight
-                  aria-hidden="true"
-                  className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
-                />
-              </button>
+                {index > 0 && (
+                  <span aria-hidden="true" className="mx-2.5 h-1 w-1 rounded-full bg-accent/70" />
+                )}
+                {service}
+              </li>
+            ))}
+          </ul>
 
-              <a
-                href={IG_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2.5 border border-white/15 px-5 py-4 text-[12px] font-semibold tracking-wide text-white/70 transition-colors duration-200 hover:border-white/35 hover:text-white sm:text-[13px]"
-              >
-                <InstagramIcon className="h-4 w-4 shrink-0" />
-                @icona.talents
-              </a>
+          <div className="js-proof mb-8 grid max-w-[420px] grid-cols-[1fr_auto_1fr] items-end gap-3 sm:gap-5">
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-white/30">
+                Before
+              </p>
+              <p className="font-display text-[1.65rem] font-extrabold leading-none tracking-[-0.04em] text-white/35 sm:text-[1.9rem]">
+                $100
+                <span className="ml-1 text-[11px] font-semibold tracking-normal text-white/25">
+                  /mo
+                </span>
+              </p>
             </div>
-
-            <p className="max-w-[42ch] text-[12px] leading-relaxed text-white/40 sm:text-[13px]">
-              DM our main page{' '}
-              <a
-                href={IG_HREF}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 font-medium text-accent transition-colors hover:text-white"
-              >
-                <InstagramIcon className="h-3 w-3" />
-                @icona.talents
-              </a>{' '}
-              and the team will show you the strategy they&apos;d build specifically for you.
+            <span aria-hidden="true" className="pb-1 text-sm font-bold text-accent">
+              →
+            </span>
+            <div>
+              <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-[0.2em] text-accent/80">
+                First month
+              </p>
+              <p className="font-display text-[1.65rem] font-extrabold leading-none tracking-[-0.04em] text-accent sm:text-[1.9rem]">
+                $30k
+              </p>
+            </div>
+            <p className="col-span-3 mt-1 text-[11px] leading-relaxed text-white/35 sm:text-[12px]">
+              One creator&apos;s first full month with us. Results verified on request.
             </p>
           </div>
+
+          <ul className="js-terms mb-8 flex max-w-[440px] border border-white/10 bg-white/[0.02]">
+            {TERMS.map((term, index) => (
+              <li
+                key={term.label}
+                className={`flex-1 px-3 py-3.5 sm:px-4 sm:py-4 ${
+                  index > 0 ? 'border-l border-white/10' : ''
+                }`}
+              >
+                <p
+                  className={`font-display text-[1.15rem] font-extrabold leading-none tracking-[-0.03em] sm:text-[1.3rem] ${
+                    'accent' in term && term.accent ? 'text-accent' : 'text-white'
+                  }`}
+                >
+                  {term.value}
+                </p>
+                <p className="mt-2 text-[8px] font-semibold uppercase leading-tight tracking-[0.14em] text-white/35 sm:text-[9px]">
+                  {term.label}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          <div className="js-cta mb-5 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onApply}
+              className="group inline-flex items-center gap-3 bg-accent px-8 py-4 text-[13px] font-bold uppercase tracking-[0.14em] text-black transition-colors duration-200 hover:bg-white active:scale-[0.98] sm:px-9 sm:text-sm"
+            >
+              Apply Now
+              <ArrowRight
+                aria-hidden="true"
+                className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1"
+              />
+            </button>
+
+            <a
+              href={IG_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2.5 border border-white/15 bg-black/20 px-5 py-4 text-[12px] font-semibold tracking-wide text-white/75 backdrop-blur-sm transition-colors duration-200 hover:border-white/35 hover:text-white sm:text-[13px]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+                className="h-4 w-4 shrink-0 fill-current"
+              >
+                <path d={IG_PATH} />
+              </svg>
+              @icona.talents
+            </a>
+          </div>
+
+          <p className="js-trust max-w-[42ch] text-[12px] leading-relaxed text-white/35 sm:text-[13px]">
+            DM Instagram and we&apos;ll show you the strategy we&apos;d build specifically for you
+            — before you commit.
+          </p>
         </div>
       </div>
     </section>

@@ -2,6 +2,9 @@ import { useCallback, useState } from 'react';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
 import { CredibilityStrip } from './components/CredibilityStrip';
+import { WhatWeDo } from './components/WhatWeDo';
+import { Results } from './components/Results';
+import { CloseCTA } from './components/CloseCTA';
 import { ApplicationModal } from './components/ApplicationModal';
 
 export default function App() {
@@ -16,9 +19,11 @@ export default function App() {
 
       <main className="flex flex-1 flex-col">
         <Hero onApply={openApply} />
+        <CredibilityStrip />
+        <WhatWeDo />
+        <Results />
+        <CloseCTA onApply={openApply} />
       </main>
-
-      <CredibilityStrip />
 
       <ApplicationModal isOpen={isApplyOpen} onClose={closeApply} />
     </div>

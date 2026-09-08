@@ -11,7 +11,7 @@ export function Header({ onApply }: HeaderProps) {
           className="group flex items-baseline gap-2.5 sm:gap-3"
           aria-label="Typhoon Agency — home"
         >
-          <span className="js-brand text-[19px] font-extrabold uppercase leading-none tracking-[-0.03em] text-white sm:text-[22px]">
+          <span className="js-brand font-display text-[19px] font-extrabold uppercase leading-none tracking-[-0.03em] text-white sm:text-[22px]">
             Typhoon Agency
             <span className="text-accent">.</span>
           </span>
